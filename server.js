@@ -59,7 +59,7 @@ app.post("/register",async(req,res)=>{
 
     await record.save()
     console.log("the success part" + record);
-    res.send('success')
+    res.send("register successfully");
 })
 
 app.post("/login", async(req,res) =>{
