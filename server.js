@@ -13,6 +13,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors());
+app.use(express.urlencoded({extended: false}));
 
 app.set('view engine', 'ejs');
 
@@ -28,13 +29,17 @@ app.get("/userprofile",(req,res)=>{
 });
 
 app.get("/securepage", auth ,(req,res)=>{
-    res.render("securepage");
+    // const allData = await db.find()
+    res.render("securepage",{signdata:allData});
 });
 
 app.get("/register",(req,res)=>{
     res.render("register");
 });
 
+app.get("/changepassword",(req,res)=>{
+    res.render("changepassword");
+});
 
 app.post("/register",async(req,res)=>{
     console.log(req.body)
@@ -62,7 +67,13 @@ app.post("/register",async(req,res)=>{
     res.send("register successfully");
 })
 
+// app.post("/securepage",(req,res)=>{
+//     console.log(req.body)
+
+// })
+
 app.post("/login", async(req,res) =>{
+    console.log(req.body)
     try {
         const email = req.body.email;
         const password = req.body.password;
@@ -77,7 +88,7 @@ app.post("/login", async(req,res) =>{
         console.log("the token part" + token); 
 
         res.cookie("jwt", token, {
-            expires:new Date(Date.now() + 50000),
+            expires:new Date(Date.now() + 80000),
             httpOnly:true
         });
         
@@ -89,6 +100,36 @@ app.post("/login", async(req,res) =>{
     } catch (error) {
         res.status(400).send("invalid email")
     }
+})
+
+app.post("/changepassword",async(req,res) => {
+    try {
+        const email = req.body.email;
+        const cpassword = req.body.cpassword;
+        const npassword = req.body.npassword;
+
+        const userpassword = await db.findOne({email:email});
+        console.log(userpassword);
+        
+        const isMatch = await bcrypt.compare(cpassword,userpassword.password);
+
+        const newpassword = await bcrypt.hash(npassword,10);
+        
+
+        if(!isMatch){
+            return;
+        }
+      
+        await db.findOneAndUpdate({email:email}, {password:newpassword}, {upsert:true}, function(err) {
+            if (err) return res.send(500, {error: err});
+            return console.log('Succesfully saved.');
+        });
+        res.redirect("login");
+        
+    } catch (error) {
+        res.status(400).send("invalid email")
+    }
+
 })
   
 mongoose.connect('mongodb://localhost:27017/signpage', {
